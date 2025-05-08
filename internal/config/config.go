@@ -20,6 +20,10 @@ const (
 type Config struct {
 	FrpcTomlPath    string `json:"frpc_toml_path"`
 	SecurityGroupId string `json:"security_group_id"`
+	Region          string `json:"region"`
+	LogPath         string `json:"log_path"`             // 新增日志路径配置
+	SecretId        string `json:"secret_id,omitempty"`  // 测试用 SecretId
+	SecretKey       string `json:"secret_key,omitempty"` // 测试用 SecretKey
 }
 
 func configFilePath() (string, error) {
@@ -78,10 +82,24 @@ func SaveSecretKey(secretKey string) error {
 }
 
 func GetSecretId() (string, error) {
+	cfg, err := Load()
+	if err != nil {
+		return "", err
+	}
+	if cfg.SecretId != "" {
+		return cfg.SecretId, nil
+	}
 	return getKeychain(secretIdLabel)
 }
 
 func GetSecretKey() (string, error) {
+	cfg, err := Load()
+	if err != nil {
+		return "", err
+	}
+	if cfg.SecretKey != "" {
+		return cfg.SecretKey, nil
+	}
 	return getKeychain(secretKeyLabel)
 }
 

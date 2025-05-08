@@ -8,7 +8,7 @@
 
 - 主要语言：Go
 - Alfred Workflow 交互：awgo（https://github.com/deanishe/awgo）
-- 腾讯云 API 调用：直接通过 Go HTTP 请求腾讯云 API（不再依赖 tccli）
+- 腾讯云 API 调用：使用腾讯云官方 Go SDK (`github.com/tencentcloud/tencentcloud-sdk-go`)（不再依赖 tccli）
 - frpc.toml 解析：Go TOML 解析库（如 BurntSushi/toml）
 - Keychain 交互：go-keychain 库
 - 公网 IP 获取：Go 调用外部 API（如 ifconfig.me）
@@ -38,14 +38,14 @@
    - 结合 frpc.toml 展示所有服务及其在安全组中的状态（已开放/未开放），并显示详细信息
 
 4. `frp config`
-   - 子命令列表（setup_keys, set_toml_path, set_sgid, view）
+   - 子命令列表（setup_keys, set_toml_path, set_sgid, set_region, view）
    - 每个子命令均为交互式流程，按 awgo 交互规范实现
    - 由于采用 Go 直接调用 API，部分配置项（如 tccli 路径）可去除
 
 **4. 配置项与初始化**
 
 - API 密钥（SecretId/SecretKey）：存储于 macOS Keychain，Go 代码通过 go-keychain 读取
-- frpc.toml 路径、安全组 ID：存储于 awgo 的配置机制
+- frpc.toml 路径、安全组 ID、腾讯云 API 区域 (Region)：存储于 awgo 的配置机制
 - 配置流程通过 `frp config` 子命令引导
 
 **5. 解析 frpc.toml 逻辑**
@@ -56,7 +56,7 @@
 
 **6. 腾讯云 API 交互**
 
-- 直接用 Go HTTP 请求腾讯云 VPC API（如 CreateSecurityGroupPolicies、DeleteSecurityGroupPolicies、DescribeSecurityGroupPolicies）
+- 使用腾讯云官方 Go SDK 调用腾讯云 VPC API（如 CreateSecurityGroupPolicies、DeleteSecurityGroupPolicies、DescribeSecurityGroupPolicies）
 - 支持 TCP 和 UDP 协议
 - 所有 API 调用需处理异常并友好反馈
 
