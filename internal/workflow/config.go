@@ -13,9 +13,9 @@ import (
 func ConfigCommand(wf *aw.Workflow, args []string) {
 	if len(args) == 1 {
 		// 展示子命令列表
-		wf.NewItem("设置腾讯云 API 密钥").Arg("setup_keys").Valid(true).Subtitle("frp config setup_keys")
-		wf.NewItem("设置 frpc.toml 路径").Arg("set_toml_path").Valid(true).Subtitle("frp config set_toml_path <路径>")
-		wf.NewItem("设置安全组 ID").Arg("set_sgid").Valid(true).Subtitle("frp config set_sgid <安全组ID>")
+		wf.NewItem("设置腾讯云 API 密钥").Arg("config setup_keys").Valid(true).Subtitle("frp config setup_keys")
+		wf.NewItem("设置 frpc.toml 路径").Arg("config set_toml_path").Valid(true).Subtitle("frp config set_toml_path <路径>")
+		wf.NewItem("设置安全组 ID").Arg("config set_sgid").Valid(true).Subtitle("frp config set_sgid <安全组ID>")
 		wf.NewItem("查看当前配置").Arg("config view").Valid(true).Subtitle("将会执行命令：frp config view")
 		wf.SendFeedback()
 		return
