@@ -194,6 +194,15 @@ func List(wf *aw.Workflow) {
 		return
 	}
 
+	// 获取所有规则（包括ACCEPT和DROP）
+	allRules, err := getAllSecurityGroupRules(cfg, secretID, secretKey)
+	if err != nil {
+		log.Error("获取所有安全组规则失败: %v", err)
+		wf.NewItem("获取所有安全组规则失败").Subtitle(err.Error()).Valid(false).Icon(aw.IconError)
+		wf.SendFeedback()
+		return
+	}
+
 	for _, p := range frpcConf.Proxies { // 遍历 Proxies 切片
 		actualServiceName := p.Name // 直接使用 Proxy 结构中的 Name
 		if actualServiceName == "" {
@@ -218,32 +227,51 @@ func List(wf *aw.Workflow) {
 		key := fmt.Sprintf("%s:%d", proto, p.RemotePort)
 		status := "未开放"
 		isOpen := false
+		isDrop := false
 		ruleInfoText := ""
 
 		if rule, ok := openedRules[key]; ok {
-			// 进一步检查 PolicyDescription 是否与服务名相关，如果需要的话
-			// 例如，如果 PolicyDescription 是 "AlfredFRP_服务名_端口"
-			// if strings.Contains(rule.PolicyDescription, actualServiceName) {
 			status = "已开放"
 			isOpen = true
 			ruleInfoText = fmt.Sprintf(" | IP: %s (描述: %s)", rule.CidrBlock, rule.PolicyDescription)
-			// }
+		}
+
+		// 检查是否存在对应的DROP规则
+		dropKey := fmt.Sprintf("%s:%d:%s", proto, p.RemotePort, "") // 不关心CIDR
+		for ruleKey, ruleInfo := range allRules {
+			if strings.HasPrefix(ruleKey, dropKey) && ruleInfo.Action == "DROP" {
+				isDrop = true
+				status = "已拒绝(DROP)"
+				ruleInfoText = fmt.Sprintf(" | IP: %s (描述: %s)", ruleInfo.CidrBlock, ruleInfo.PolicyDescription)
+				break
+			}
 		}
 
 		title := fmt.Sprintf("%s [%s]", actualServiceName, proto)
 		subtitle := fmt.Sprintf("远程端口:%d  本地端口:%d | 状态: %s%s",
 			p.RemotePort, p.LocalPort, status, ruleInfoText)
 
-		item := wf.NewItem(title).
+		var displayTitle string
+		if isDrop {
+			// 使用锁图标表示已拒绝
+			displayTitle = "🔒 " + title
+		} else if isOpen {
+			// 使用绿色对勾图标表示已开放
+			displayTitle = "✅ " + title
+		} else {
+			// 使用加号图标表示未开放
+			displayTitle = "➕ " + title
+		}
+
+		item := wf.NewItem(displayTitle).
 			Subtitle(subtitle).
 			Arg(fmt.Sprintf("%s %s %d", actualServiceName, proto, p.RemotePort)). // 为后续操作（如 close）准备参数
 			Valid(true)                                                           // 使其可选，以便后续操作
 
-		if isOpen {
-			item.Icon(aw.IconFavorite) // 使用 awgo 内置图标
-		} else {
-			item.Icon(aw.IconWarning) // 使用 aw.IconWarning 替代 aw.IconRemove
-		}
+		// 添加mod键功能，显示更多信息
+		item.NewModifier(aw.ModCmd).
+			Subtitle(fmt.Sprintf("详细信息: 服务=%s, 协议=%s, 远程端口=%d, 本地端口=%d",
+				actualServiceName, proto, p.RemotePort, p.LocalPort))
 	}
 
 	// 用户反馈：即使没有规则匹配，也应列出所有服务，而不是显示统一提示。

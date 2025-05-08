@@ -60,8 +60,24 @@ func main() {
 			workflow.List(wf)
 		} else if len(args) > 1 && args[1] == "config" {
 			workflow.ConfigCommand(wf, args[1:])
+		} else if len(args) > 1 && args[1] == "open" {
+			// 检查是否有格式为 open:服务名|协议|远程端口|本地端口 的参数
+			if len(args) > 2 {
+				workflow.OpenPort(wf, args[2:])
+			} else {
+				// 显示可以开放的服务列表
+				workflow.OpenCommand(wf)
+			}
+		} else if len(args) > 1 && args[1] == "close" {
+			// 处理close子命令
+			if len(args) > 2 {
+				workflow.ClosePort(wf, args[2:])
+			} else {
+				// 显示可以关闭的服务列表
+				workflow.CloseCommand(wf)
+			}
 		} else {
-			wf.NewItem("用法: alfred-frp-sg list | config").Subtitle("支持 list/config 子命令").Valid(false)
+			wf.NewItem("用法: alfred-frp-sg list | config | open | close").Subtitle("支持 list/config/open/close 子命令").Valid(false)
 			wf.SendFeedback()
 		}
 	})
