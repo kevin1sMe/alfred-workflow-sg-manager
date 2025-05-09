@@ -15,13 +15,8 @@ func ConfigCommand(wf *aw.Workflow, args []string) {
 	fmt.Fprintf(os.Stderr, "ConfigCommand received args: %v\n", args)
 
 	if len(args) == 1 {
-		// 展示子命令列表
-		wf.NewItem("设置腾讯云 API 密钥").Arg("config setup_keys").Valid(true).Subtitle("config setup_keys")
-		wf.NewItem("设置 frpc.toml 路径").Arg("config set_toml_path").Valid(true).Subtitle("config set_toml_path <路径>")
-		wf.NewItem("设置安全组 ID").Arg("config set_sgid").Valid(true).Subtitle("config set_sgid <安全组ID>")
-		wf.NewItem("设置腾讯云 API 区域").Arg("config set_region").Valid(true).Subtitle("config set_region <区域代码>") // 新增设置区域
-		wf.NewItem("查看当前配置").Arg("config view").Valid(true).Subtitle("config view")
-		wf.SendFeedback()
+		// 直接调用 showConfigHelp 展示子命令列表
+		showConfigHelp(wf)
 		return
 	}
 
@@ -51,19 +46,60 @@ func ConfigCommand(wf *aw.Workflow, args []string) {
 			return
 		}
 		setRegion(wf, args[2])
-	case "view":
-		viewConfig(wf)
 	default:
 		showConfigHelp(wf)
 	}
 }
 
 func showConfigHelp(wf *aw.Workflow) {
-	wf.NewItem("frp config setup_keys").Subtitle("设置腾讯云 API 密钥").Valid(true).Arg("config setup_keys")
-	wf.NewItem("frp config set_toml_path <路径>").Subtitle("设置 frpc.toml 路径").Valid(true).Arg("config set_toml_path")
-	wf.NewItem("frp config set_sgid <安全组ID>").Subtitle("设置安全组 ID").Valid(true).Arg("config set_sgid")
-	wf.NewItem("frp config set_region <区域代码>").Subtitle("设置腾讯云 API 区域 (例如 ap-guangzhou)").Valid(true).Arg("config set_region") // 新增帮助信息
-	wf.NewItem("frp config view").Subtitle("查看当前配置").Valid(true).Arg("config view")
+	cfg, _ := config.Load()
+
+	// frpc.toml 路径
+	tomlPath := "未设置"
+	if cfg.FrpcTomlPath != "" {
+		tomlPath = cfg.FrpcTomlPath
+	}
+	wf.NewItem("设置 frpc.toml 路径").
+		Subtitle(tomlPath).
+		Valid(true).
+		Arg("set_toml_path," + tomlPath)
+
+	// 安全组ID
+	sgid := "未设置"
+	if cfg.SecurityGroupId != "" {
+		sgid = cfg.SecurityGroupId
+	}
+	wf.NewItem("设置安全组 ID").
+		Subtitle(sgid).
+		Valid(true).
+		Arg("set_sgid," + sgid)
+
+	// 区域
+	region := "未设置"
+	if cfg.Region != "" {
+		region = cfg.Region
+	}
+	wf.NewItem("设置腾讯云 API 区域").
+		Subtitle(region).
+		Valid(true).
+		Arg("set_region," + region)
+
+	// 密钥（可选，按需展示）
+	id, _ := config.GetSecretId()
+	key, _ := config.GetSecretKey()
+	idShow := "未设置"
+	keyShow := "未设置"
+	if id != "" {
+		idShow = maskSecret(id)
+	}
+	if key != "" {
+		keyShow = maskSecret(key)
+	}
+	wf.NewItem("设置腾讯云 API 密钥").
+		Subtitle(fmt.Sprintf("id: %s, key: %s", idShow, keyShow)).
+		Valid(true).
+		Arg(fmt.Sprintf("setup_keys,%s,%s", id, key))
+
 	wf.SendFeedback()
 }
 
@@ -125,100 +161,9 @@ func setRegion(wf *aw.Workflow, region string) {
 	wf.SendFeedback()
 }
 
-func viewConfig(wf *aw.Workflow) {
-	cfg, _ := config.Load()
-
-	// 创建可选择的项目以显示配置
-	if cfg.FrpcTomlPath != "" {
-		wf.NewItem("frpc.toml 路径").
-			Subtitle(cfg.FrpcTomlPath).
-			Arg(cfg.FrpcTomlPath).      // 设置 Arg 以便回车时传递
-			Copytext(cfg.FrpcTomlPath). // 设置 Copytext 以便 Cmd+C 复制
-			Valid(true).
-			Icon(aw.IconNote)
-	} else {
-		wf.NewItem("frpc.toml 路径").
-			Subtitle("未设置").
-			Valid(false).
-			Icon(aw.IconNote)
-	}
-
-	if cfg.SecurityGroupId != "" {
-		wf.NewItem("安全组ID").
-			Subtitle(cfg.SecurityGroupId).
-			Arg(cfg.SecurityGroupId).      // 设置 Arg 以便回车时传递
-			Copytext(cfg.SecurityGroupId). // 设置 Copytext 以便 Cmd+C 复制
-			Valid(true).
-			Icon(aw.IconNote)
-	} else {
-		wf.NewItem("安全组ID").
-			Subtitle("未设置").
-			Valid(false).
-			Icon(aw.IconNote)
-	}
-
-	// 显示 Region
-	if cfg.Region != "" {
-		wf.NewItem("腾讯云 API 区域").
-			Subtitle(cfg.Region).
-			Arg(cfg.Region).
-			Copytext(cfg.Region).
-			Valid(true).
-			Icon(aw.IconNote)
-	} else {
-		wf.NewItem("腾讯云 API 区域").
-			Subtitle("未设置").
-			Valid(false).
-			Icon(aw.IconNote)
-	}
-
-	// 密钥部分
-	id, err1 := config.GetSecretId()
-	key, err2 := config.GetSecretKey()
-
-	idShow := "未设置"
-	actualId := "" // 用于存储真实的ID值
-	if err1 == nil && id != "" {
-		idShow = maskSecret(id)
-		actualId = id
-		wf.NewItem("SecretId").
-			Subtitle(idShow).
-			Arg(actualId).      // 设置 Arg 以便回车时传递实际的 ID
-			Copytext(actualId). // 设置 Copytext 以便 Cmd+C 复制实际的 ID
-			Valid(true).
-			Icon(aw.IconSettings) // 使用 aw.IconSettings 替代
-	} else {
-		wf.NewItem("SecretId").
-			Subtitle(idShow). // 显示 "未设置"
-			Valid(false).
-			Icon(aw.IconSettings) // 使用 aw.IconSettings 替代
-	}
-
-	keyShow := "未设置"
-	actualKey := "" // 用于存储真实的Key值
-	if err2 == nil && key != "" {
-		keyShow = maskSecret(key)
-		actualKey = key
-		wf.NewItem("SecretKey").
-			Subtitle(keyShow).
-			Arg(actualKey).      // 设置 Arg 以便回车时传递实际的 Key
-			Copytext(actualKey). // 设置 Copytext 以便 Cmd+C 复制实际的 Key
-			Valid(true).
-			Icon(aw.IconSettings) // 使用 aw.IconSettings 替代
-	} else {
-		wf.NewItem("SecretKey").
-			Subtitle(keyShow). // 显示 "未设置"
-			Valid(false).
-			Icon(aw.IconSettings) // 使用 aw.IconSettings 替代
-	}
-
-	// 确保显示结果
-	wf.SendFeedback()
-}
-
 func maskSecret(s string) string {
 	if len(s) <= 8 {
 		return s
 	}
-	return s[:4] + strings.Repeat("*", len(s)-8) + s[len(s)-4:]
+	return s[:4] + strings.Repeat("*", 4) + s[len(s)-4:]
 }

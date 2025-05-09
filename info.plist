@@ -8,11 +8,54 @@
 	<string>Tools</string>
 	<key>connections</key>
 	<dict>
-		<key>9387F683-01CB-412C-A913-6E3CFCD3D915</key>
+		<key>23EB9AE0-2961-4369-9743-160234D73A88</key>
 		<array>
 			<dict>
 				<key>destinationuid</key>
-				<string>11AC8A60-6EF2-4AF8-95DF-0ABE6FDCC6BA</string>
+				<string>888CAEF9-B973-46F2-9ED4-BBE2F9607824</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>372EA26C-2076-46B4-BD2E-F71C2CED7956</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>A759959B-9B74-402F-A6F2-41E75B27D23F</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>75255D21-1BAE-4C04-82FB-68506F61BF3B</key>
+		<array/>
+		<key>888CAEF9-B973-46F2-9ED4-BBE2F9607824</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>372EA26C-2076-46B4-BD2E-F71C2CED7956</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>9387F683-01CB-412C-A913-6E3CFCD3D915</key>
+		<array/>
+		<key>BD8F2FC1-8B0F-45B0-A3F1-C9F72B45D24D</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>23EB9AE0-2961-4369-9743-160234D73A88</string>
 				<key>modifiers</key>
 				<integer>0</integer>
 				<key>modifiersubtext</key>
@@ -26,6 +69,32 @@
 			<dict>
 				<key>destinationuid</key>
 				<string>9387F683-01CB-412C-A913-6E3CFCD3D915</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>DB2FCBA8-35A9-4476-8809-FF7B57E33A81</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>BD8F2FC1-8B0F-45B0-A3F1-C9F72B45D24D</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>DB6D60A6-AE98-45BE-A433-646ED02DD0D0</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>DB2FCBA8-35A9-4476-8809-FF7B57E33A81</string>
 				<key>modifiers</key>
 				<integer>0</integer>
 				<key>modifiersubtext</key>
@@ -100,25 +169,6 @@ echo "`date`: from second =&gt; [$@]" &gt;&gt; /tmp/alfred-frp.log
 		<dict>
 			<key>config</key>
 			<dict>
-				<key>autopaste</key>
-				<false/>
-				<key>clipboardtext</key>
-				<string>{query}</string>
-				<key>ignoredynamicplaceholders</key>
-				<false/>
-				<key>transient</key>
-				<false/>
-			</dict>
-			<key>type</key>
-			<string>alfred.workflow.output.clipboard</string>
-			<key>uid</key>
-			<string>11AC8A60-6EF2-4AF8-95DF-0ABE6FDCC6BA</string>
-			<key>version</key>
-			<integer>3</integer>
-		</dict>
-		<dict>
-			<key>config</key>
-			<dict>
 				<key>alfredfiltersresults</key>
 				<false/>
 				<key>alfredfiltersresultsmatchmode</key>
@@ -152,9 +202,9 @@ echo "`date`: from second =&gt; [$@]" &gt;&gt; /tmp/alfred-frp.log
 				<key>scriptfile</key>
 				<string></string>
 				<key>subtext</key>
-				<string></string>
+				<string>open/close/list相关服务</string>
 				<key>title</key>
-				<string></string>
+				<string>查询与修改FRP安全组</string>
 				<key>type</key>
 				<integer>11</integer>
 				<key>withspace</key>
@@ -167,31 +217,365 @@ echo "`date`: from second =&gt; [$@]" &gt;&gt; /tmp/alfred-frp.log
 			<key>version</key>
 			<integer>3</integer>
 		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>alfredfiltersresults</key>
+				<false/>
+				<key>alfredfiltersresultsmatchmode</key>
+				<integer>0</integer>
+				<key>argumenttreatemptyqueryasnil</key>
+				<true/>
+				<key>argumenttrimmode</key>
+				<integer>0</integer>
+				<key>argumenttype</key>
+				<integer>0</integer>
+				<key>escaping</key>
+				<integer>102</integer>
+				<key>queuedelaycustom</key>
+				<integer>3</integer>
+				<key>queuedelayimmediatelyinitially</key>
+				<true/>
+				<key>queuedelaymode</key>
+				<integer>0</integer>
+				<key>queuemode</key>
+				<integer>1</integer>
+				<key>runningsubtext</key>
+				<string></string>
+				<key>script</key>
+				<string>#!/bin/bash
+
+# 获取用户当前输入 (即 Script Filter 的 query)
+QUERY="$1"
+
+# 生成一个简单的 item，它的 arg 就是用户当前输入
+# 当用户选择或确认这个 item 时，这个 arg 会被传递给下一个组件
+# 前面 Arg and Vars 设置的 workflow 变量会自动传递到这里和后续组件
+jq -n \
+  --arg current_query "$QUERY" \
+  '{
+    items: [
+      {
+        # 修正：使用字符串插值 \() 来拼接字符串和变量
+        "title": "确认输入: \($current_query)",
+        "subtitle": "按下回车继续",
+        "arg": $current_query, # 将当前输入作为 arg
+        "valid": true
+      }
+    ]
+  }'
+
+exit 0</string>
+				<key>scriptargtype</key>
+				<integer>1</integer>
+				<key>scriptfile</key>
+				<string></string>
+				<key>subtext</key>
+				<string>{var:action_key}</string>
+				<key>title</key>
+				<string>请输入值</string>
+				<key>type</key>
+				<integer>0</integer>
+				<key>withspace</key>
+				<true/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.input.scriptfilter</string>
+			<key>uid</key>
+			<string>888CAEF9-B973-46F2-9ED4-BBE2F9607824</string>
+			<key>version</key>
+			<integer>3</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>concurrently</key>
+				<false/>
+				<key>escaping</key>
+				<integer>102</integer>
+				<key>script</key>
+				<string># 设置配置
+echo "action_key: ${action_key}"  &gt;&gt; /tmp/alfred-frp.log
+echo "vaule: [$@]"  &gt;&gt; /tmp/alfred-frp.log
+
+# 执行命令
+result=$(/Users/kevin/Source/alfred-workflow-sg-manager/bin/alfred-frp config ${action_key} $@)
+
+#echo "reslut: ${result}"
+title=$(echo $result | jq -r '.items[0].title')
+
+echo "${title}"</string>
+				<key>scriptargtype</key>
+				<integer>1</integer>
+				<key>scriptfile</key>
+				<string></string>
+				<key>type</key>
+				<integer>11</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.script</string>
+			<key>uid</key>
+			<string>372EA26C-2076-46B4-BD2E-F71C2CED7956</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>concurrently</key>
+				<false/>
+				<key>escaping</key>
+				<integer>102</integer>
+				<key>script</key>
+				<string># --- 捕获传递给当前脚本的参数 ---
+# 确保用双引号包围变量，以正确处理包含空格或其他特殊字符的参数
+ACTION_KEY_VAL="$1"
+CUR_VALUE_VAL="$2"
+
+# --- 调试日志 (您可以根据需要保留或移除) ---
+env &gt;&gt; /tmp/alfred-frp.log
+echo "`date` args to this script: $@" &gt;&gt; /tmp/alfred-frp.log
+echo "`date` \$1 captured: '${ACTION_KEY_VAL}'" &gt;&gt; /tmp/alfred-frp.log # 打印捕获到的 $1
+echo "`date` \$2 captured: '${CUR_VALUE_VAL}'" &gt;&gt; /tmp/alfred-frp.log # 打印捕获到的 $2
+# 注意：下面的 env 会显示脚本内部设置的环境变量，但这不影响传给后续 Alfred 组件的方式
+# export action_key="$ACTION_KEY_VAL" # 这一行对于传给后续Alfred组件不是必需的
+# export cur_value="$CUR_VALUE_VAL"   # 这一行对于传给后续Alfred组件不是必需的
+# env &gt;&gt; /tmp/alfred-frp.log
+
+
+# --- 输出 Alfred 需要的 JSON 格式，包含要传递的变量 ---
+# 使用 jq 工具构建 JSON
+# -n: 从空输入开始构建
+# --arg: 将 bash 变量传递给 jq 过滤器
+jq -n \
+  --arg ak "$ACTION_KEY_VAL" \
+  --arg cv "$CUR_VALUE_VAL" \
+  '{ alfredworkflow: { variables: { action_key: $ak, cur_value: $cv } } }'
+
+# --- 移除原脚本中不用于传递变量的输出行 ---
+# echo -n $cur_value # 移除此行，因为它只是将 $cur_value 的值输出，Alfred 不会解析为变量
+
+exit 0 # 脚本成功退出</string>
+				<key>scriptargtype</key>
+				<integer>1</integer>
+				<key>scriptfile</key>
+				<string></string>
+				<key>type</key>
+				<integer>11</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.script</string>
+			<key>uid</key>
+			<string>BD8F2FC1-8B0F-45B0-A3F1-C9F72B45D24D</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>lastpathcomponent</key>
+				<false/>
+				<key>onlyshowifquerypopulated</key>
+				<false/>
+				<key>removeextension</key>
+				<false/>
+				<key>text</key>
+				<string></string>
+				<key>title</key>
+				<string>{query}</string>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.output.notification</string>
+			<key>uid</key>
+			<string>A759959B-9B74-402F-A6F2-41E75B27D23F</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>alfredfiltersresults</key>
+				<false/>
+				<key>alfredfiltersresultsmatchmode</key>
+				<integer>0</integer>
+				<key>argumenttreatemptyqueryasnil</key>
+				<true/>
+				<key>argumenttrimmode</key>
+				<integer>0</integer>
+				<key>argumenttype</key>
+				<integer>2</integer>
+				<key>escaping</key>
+				<integer>102</integer>
+				<key>keyword</key>
+				<string>fc</string>
+				<key>queuedelaycustom</key>
+				<integer>3</integer>
+				<key>queuedelayimmediatelyinitially</key>
+				<true/>
+				<key>queuedelaymode</key>
+				<integer>0</integer>
+				<key>queuemode</key>
+				<integer>1</integer>
+				<key>runningsubtext</key>
+				<string></string>
+				<key>script</key>
+				<string># 记录查询到日志
+echo "`date`: from fc =&gt; [$@]" &gt;&gt; /tmp/alfred-frp.log
+
+
+# 执行命令
+/Users/kevin/Source/alfred-workflow-sg-manager/bin/alfred-frp config $@</string>
+				<key>scriptargtype</key>
+				<integer>1</integer>
+				<key>scriptfile</key>
+				<string></string>
+				<key>subtext</key>
+				<string>配置存放在 ~/.alfred-frp-sg/config.json</string>
+				<key>title</key>
+				<string>配置FRP安全组</string>
+				<key>type</key>
+				<integer>11</integer>
+				<key>withspace</key>
+				<false/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.input.scriptfilter</string>
+			<key>uid</key>
+			<string>DB6D60A6-AE98-45BE-A433-646ED02DD0D0</string>
+			<key>version</key>
+			<integer>3</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>argument</key>
+				<string>{var:cur_value}</string>
+				<key>passthroughargument</key>
+				<false/>
+				<key>variables</key>
+				<dict/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.utility.argument</string>
+			<key>uid</key>
+			<string>23EB9AE0-2961-4369-9743-160234D73A88</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>delimiter</key>
+				<string>,</string>
+				<key>discardemptyarguments</key>
+				<true/>
+				<key>outputas</key>
+				<integer>1</integer>
+				<key>trimarguments</key>
+				<false/>
+				<key>variableprefix</key>
+				<string>|</string>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.utility.split</string>
+			<key>uid</key>
+			<string>DB2FCBA8-35A9-4476-8809-FF7B57E33A81</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>argumenttype</key>
+				<integer>0</integer>
+				<key>subtext</key>
+				<string></string>
+				<key>text</key>
+				<string>请输入值</string>
+				<key>withspace</key>
+				<true/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.input.keyword</string>
+			<key>uid</key>
+			<string>75255D21-1BAE-4C04-82FB-68506F61BF3B</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
 	</array>
 	<key>readme</key>
 	<string></string>
 	<key>uidata</key>
 	<dict>
-		<key>11AC8A60-6EF2-4AF8-95DF-0ABE6FDCC6BA</key>
+		<key>23EB9AE0-2961-4369-9743-160234D73A88</key>
 		<dict>
 			<key>xpos</key>
-			<real>755</real>
+			<real>450</real>
 			<key>ypos</key>
-			<real>140</real>
+			<real>380</real>
+		</dict>
+		<key>372EA26C-2076-46B4-BD2E-F71C2CED7956</key>
+		<dict>
+			<key>xpos</key>
+			<real>670</real>
+			<key>ypos</key>
+			<real>340</real>
+		</dict>
+		<key>75255D21-1BAE-4C04-82FB-68506F61BF3B</key>
+		<dict>
+			<key>xpos</key>
+			<real>475</real>
+			<key>ypos</key>
+			<real>430</real>
+		</dict>
+		<key>888CAEF9-B973-46F2-9ED4-BBE2F9607824</key>
+		<dict>
+			<key>xpos</key>
+			<real>500</real>
+			<key>ypos</key>
+			<real>275</real>
 		</dict>
 		<key>9387F683-01CB-412C-A913-6E3CFCD3D915</key>
 		<dict>
 			<key>xpos</key>
-			<real>525</real>
+			<real>265</real>
 			<key>ypos</key>
-			<real>140</real>
+			<real>165</real>
+		</dict>
+		<key>A759959B-9B74-402F-A6F2-41E75B27D23F</key>
+		<dict>
+			<key>xpos</key>
+			<real>845</real>
+			<key>ypos</key>
+			<real>355</real>
+		</dict>
+		<key>BD8F2FC1-8B0F-45B0-A3F1-C9F72B45D24D</key>
+		<dict>
+			<key>xpos</key>
+			<real>290</real>
+			<key>ypos</key>
+			<real>350</real>
 		</dict>
 		<key>C5C6370E-049C-4F72-9167-11760BC5A880</key>
 		<dict>
 			<key>xpos</key>
-			<real>245</real>
+			<real>30</real>
 			<key>ypos</key>
-			<real>175</real>
+			<real>170</real>
+		</dict>
+		<key>DB2FCBA8-35A9-4476-8809-FF7B57E33A81</key>
+		<dict>
+			<key>xpos</key>
+			<real>220</real>
+			<key>ypos</key>
+			<real>400</real>
+		</dict>
+		<key>DB6D60A6-AE98-45BE-A433-646ED02DD0D0</key>
+		<dict>
+			<key>xpos</key>
+			<real>30</real>
+			<key>ypos</key>
+			<real>360</real>
 		</dict>
 	</dict>
 	<key>userconfigurationconfig</key>
