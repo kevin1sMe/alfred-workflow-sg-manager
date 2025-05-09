@@ -77,7 +77,7 @@ func main() {
 				workflow.CloseCommand(wf)
 			}
 		} else {
-			wf.NewItem("用法: alfred-frp-sg list | config | open | close").Subtitle("支持 list/config/open/close 子命令").Valid(false)
+			wf.NewItem("用法: list | open | close").Valid(false)
 			wf.SendFeedback()
 		}
 	})
