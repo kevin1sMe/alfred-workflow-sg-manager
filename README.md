@@ -1,4 +1,4 @@
-# Alfred Workflow - FRP 腾讯云安全组助手 (Bash 版)
+# Alfred Workflow - FRP 腾讯云安全组助手
 
 ## 简介
 本项目为 Alfred Workflow，允许用户通过 Alfred 快速管理腾讯云安全组端口，适用于 frp 场景。
