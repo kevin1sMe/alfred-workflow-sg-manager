@@ -145,7 +145,7 @@ echo "`date`: from second =&gt; [$@]" &gt;&gt; /tmp/alfred-frp.log
 
 
 # 执行命令
-/Users/kevin/Source/alfred-workflow-sg-manager/bin/alfred-frp $@</string>
+${BIN_PATH}/alfred-frp $@</string>
 				<key>scriptargtype</key>
 				<integer>1</integer>
 				<key>scriptfile</key>
@@ -196,7 +196,7 @@ echo "`date`: from second =&gt; [$@]" &gt;&gt; /tmp/alfred-frp.log
 				<key>script</key>
 				<string>echo "`date`: from main =&gt; [$@]"  &gt;&gt; /tmp/alfred-frp.log
 
-/Users/kevin/Source/alfred-workflow-sg-manager/bin/alfred-frp $@</string>
+${BIN_PATH}/alfred-frp $@</string>
 				<key>scriptargtype</key>
 				<integer>1</integer>
 				<key>scriptfile</key>
@@ -299,7 +299,7 @@ echo "action_key: ${action_key}"  &gt;&gt; /tmp/alfred-frp.log
 echo "vaule: [$@]"  &gt;&gt; /tmp/alfred-frp.log
 
 # 执行命令
-result=$(/Users/kevin/Source/alfred-workflow-sg-manager/bin/alfred-frp config ${action_key} $@)
+result=$(${BIN_PATH}/alfred-frp config ${action_key} $@)
 
 #echo "reslut: ${result}"
 title=$(echo $result | jq -r '.items[0].title')
@@ -424,7 +424,7 @@ echo "`date`: from fc =&gt; [$@]" &gt;&gt; /tmp/alfred-frp.log
 
 
 # 执行命令
-/Users/kevin/Source/alfred-workflow-sg-manager/bin/alfred-frp config $@</string>
+${BIN_PATH}/alfred-frp config $@</string>
 				<key>scriptargtype</key>
 				<integer>1</integer>
 				<key>scriptfile</key>
@@ -504,7 +504,9 @@ echo "`date`: from fc =&gt; [$@]" &gt;&gt; /tmp/alfred-frp.log
 		</dict>
 	</array>
 	<key>readme</key>
-	<string></string>
+	<string>Alfred Workflow - FRP 腾讯云安全组助手
+
+通过 Alfred 快速管理腾讯云安全组端口，适用于 frp 场景。支持一键开放/关闭 frpc.toml 中定义的服务端口到当前公网 IP，自动解析配置，安全存储 API 密钥，所有操作均可在 Alfred 内完成。适合需要临时开放端口的开发者和运维人员。</string>
 	<key>uidata</key>
 	<dict>
 		<key>23EB9AE0-2961-4369-9743-160234D73A88</key>
@@ -579,7 +581,115 @@ echo "`date`: from fc =&gt; [$@]" &gt;&gt; /tmp/alfred-frp.log
 		</dict>
 	</dict>
 	<key>userconfigurationconfig</key>
-	<array/>
+	<array>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>default</key>
+				<string>/Users/kevinlin/Source/alfred-workflow-sg-manager/bin</string>
+				<key>placeholder</key>
+				<string>可执行文件路径</string>
+				<key>required</key>
+				<true/>
+				<key>trim</key>
+				<true/>
+			</dict>
+			<key>description</key>
+			<string>bin path</string>
+			<key>label</key>
+			<string>bin path</string>
+			<key>type</key>
+			<string>textfield</string>
+			<key>variable</key>
+			<string>BIN_PATH</string>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>default</key>
+				<string>~/frp/frpc.toml</string>
+				<key>placeholder</key>
+				<string>frpc.toml 路径</string>
+				<key>required</key>
+				<true/>
+				<key>trim</key>
+				<true/>
+			</dict>
+			<key>description</key>
+			<string>frpc.toml 路径</string>
+			<key>label</key>
+			<string>frpc_toml_path</string>
+			<key>type</key>
+			<string>textfield</string>
+			<key>variable</key>
+			<string>FRPC_TOML_PATH</string>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>default</key>
+				<string></string>
+				<key>placeholder</key>
+				<string>安全组ID</string>
+				<key>required</key>
+				<true/>
+				<key>trim</key>
+				<true/>
+			</dict>
+			<key>description</key>
+			<string>security group id</string>
+			<key>label</key>
+			<string>security_group_id</string>
+			<key>type</key>
+			<string>textfield</string>
+			<key>variable</key>
+			<string>SECURITY_GROUP_ID</string>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>default</key>
+				<string>ap-shanghai</string>
+				<key>placeholder</key>
+				<string>地域(region)</string>
+				<key>required</key>
+				<true/>
+				<key>trim</key>
+				<true/>
+			</dict>
+			<key>description</key>
+			<string>region</string>
+			<key>label</key>
+			<string>region</string>
+			<key>type</key>
+			<string>textfield</string>
+			<key>variable</key>
+			<string>REGION</string>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>default</key>
+				<string>/tmp/alfred-frp.log</string>
+				<key>placeholder</key>
+				<string>日志路径</string>
+				<key>required</key>
+				<false/>
+				<key>trim</key>
+				<true/>
+			</dict>
+			<key>description</key>
+			<string>log path</string>
+			<key>label</key>
+			<string>log_path</string>
+			<key>type</key>
+			<string>textfield</string>
+			<key>variable</key>
+			<string>LOG_PATH</string>
+		</dict>
+	</array>
+	<key>version</key>
+	<string></string>
 	<key>webaddress</key>
 	<string>https://github.com/kevin1sMe/alfred-workflow-sg-manager</string>
 </dict>

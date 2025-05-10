@@ -82,21 +82,18 @@ func OpenCommand(wf *aw.Workflow) {
 	}
 
 	log.Info("frpcConf.proxies: %v", frpcConf.Proxies)
-	openedRules, err := getRealOpenedPorts(cfg, secretID, secretKey)
-	if err != nil {
-		log.Error("获取安全组规则失败: %v", err)
-		wf.NewItem("获取安全组规则失败").Subtitle(err.Error()).Valid(false).Icon(aw.IconError)
-		wf.SendFeedback()
-		return
-	}
-
-	// 获取所有规则（包括ACCEPT和DROP）
 	allRules, err := getAllSecurityGroupRules(cfg, secretID, secretKey)
 	if err != nil {
 		log.Error("获取所有安全组规则失败: %v", err)
 		wf.NewItem("获取所有安全组规则失败").Subtitle(err.Error()).Valid(false).Icon(aw.IconError)
 		wf.SendFeedback()
 		return
+	}
+	openedRules := make(map[string]FetchedRuleInfo)
+	for proxyName, v := range allRules {
+		if v.Action == "ACCEPT" {
+			openedRules[proxyName] = v
+		}
 	}
 
 	log.Info("openedRules: %v", openedRules)
@@ -115,70 +112,83 @@ func OpenCommand(wf *aw.Workflow) {
 			log.Warn("发现一个未命名的代理配置，已跳过: LocalPort=%d, RemotePort=%d", p.LocalPort, p.RemotePort)
 			continue
 		}
-
-		// 检查 p.Type, p.RemotePort 是否有效
 		if p.Type == "" || p.RemotePort == 0 {
 			log.Warn("跳过无效的代理配置: %s (Type: %s, RemotePort: %d)", actualServiceName, p.Type, p.RemotePort)
 			continue
 		}
-
-		proto := "TCP" // 默认 TCP
-		if strings.ToUpper(p.Type) == "UDP" {
-			proto = "UDP"
-		}
-
-		// API 返回的 Port 是字符串，frpc.toml 的 RemotePort 是 int
-		key := fmt.Sprintf("%s:%d", proto, p.RemotePort)
 		isOpen := false
-
-		if _, ok := openedRules[key]; ok {
+		if _, ok := openedRules[actualServiceName]; ok {
 			isOpen = true
 		}
-
-		// 检查是否存在对应的DROP规则
-		dropKey := fmt.Sprintf("%s:%d:%s", proto, p.RemotePort, "") // 不关心CIDR
 		hasDropRule := false
-		for ruleKey, ruleInfo := range allRules {
-			if strings.HasPrefix(ruleKey, dropKey) && ruleInfo.Action == "DROP" {
-				// 如果有DROP规则，标记它，但不视为已开放
-				hasDropRule = true
-				log.Info("服务 %s [%s:%d] 存在拒绝规则，视为未开放", actualServiceName, proto, p.RemotePort)
-				break
-			}
+		if ruleInfo, ok := allRules[actualServiceName]; ok && ruleInfo.Action == "DROP" {
+			hasDropRule = true
+			log.Info("服务 %s 存在拒绝规则，视为未开放", actualServiceName)
 		}
-
-		// 只显示未开放的服务（包括DROP状态的规则）
 		if !isOpen || hasDropRule {
 			hasUnopened = true
-			title := fmt.Sprintf("%s [%s]", actualServiceName, proto)
+			title := fmt.Sprintf("%s [%s]", actualServiceName, strings.ToUpper(p.Type))
 			subtitle := ""
-
 			if hasDropRule {
-				subtitle = fmt.Sprintf("远程端口:%d  本地端口:%d | 状态: 已拒绝(DROP)",
-					p.RemotePort, p.LocalPort)
-				item := wf.NewItem("🔒 "+title).
+				subtitle = fmt.Sprintf("远程端口:%d  本地端口:%d | 状态: 已拒绝(DROP)", p.RemotePort, p.LocalPort)
+				displayTitle := IconDrop + " " + title
+				item := wf.NewItem(displayTitle).
 					Subtitle(subtitle).
-					Arg(fmt.Sprintf("open %s|%s|%d|%d", actualServiceName, proto, p.RemotePort, p.LocalPort)).
+					Arg(fmt.Sprintf("open %s|%s|%d|%d", actualServiceName, strings.ToUpper(p.Type), p.RemotePort, p.LocalPort)).
 					Valid(true).
 					Icon(aw.IconWarning).
 					Var("action", "open")
-
-				// 添加mod键功能，显示更多信息
+				modSubtitle := ""
+				if ruleInfo, ok := allRules[actualServiceName]; ok && ruleInfo.Action == "DROP" {
+					modSubtitle = ruleInfo.PolicyDescription
+					if ruleInfo.ModifyTime != "" {
+						if modSubtitle != "" {
+							modSubtitle += "\n"
+						}
+						modSubtitle += "最后修改时间: " + ruleInfo.ModifyTime
+					}
+				}
+				if modSubtitle == "" {
+					modSubtitle = "无描述信息"
+				}
 				item.NewModifier(aw.ModCmd).
-					Subtitle("显示更多详细信息")
+					Subtitle(modSubtitle)
+			} else if isOpen {
+				subtitle = fmt.Sprintf("远程端口:%d  本地端口:%d | 状态: 已开放", p.RemotePort, p.LocalPort)
+				displayTitle := IconOpen + " " + title
+				item := wf.NewItem(displayTitle).
+					Subtitle(subtitle).
+					Arg(fmt.Sprintf("open %s|%s|%d|%d", actualServiceName, strings.ToUpper(p.Type), p.RemotePort, p.LocalPort)).
+					Valid(true).
+					Icon(aw.IconWarning).
+					Var("action", "open")
+				modSubtitle := ""
+				if rule, ok := openedRules[actualServiceName]; ok {
+					modSubtitle = rule.PolicyDescription
+					if rule.ModifyTime != "" {
+						if modSubtitle != "" {
+							modSubtitle += "\n"
+						}
+						modSubtitle += "最后修改时间: " + rule.ModifyTime
+					}
+				}
+				if modSubtitle == "" {
+					modSubtitle = "无描述信息"
+				}
+				item.NewModifier(aw.ModCmd).
+					Subtitle(modSubtitle)
 			} else {
-				subtitle = fmt.Sprintf("远程端口:%d  本地端口:%d | 状态: 未开放",
-					p.RemotePort, p.LocalPort)
-				item := wf.NewItem("➕ "+title).
+				subtitle = fmt.Sprintf("远程端口:%d  本地端口:%d | 状态: 未开放", p.RemotePort, p.LocalPort)
+				displayTitle := IconUnknown + " " + title
+				item := wf.NewItem(displayTitle).
 					Subtitle(subtitle).
-					Arg(fmt.Sprintf("open %s|%s|%d|%d", actualServiceName, proto, p.RemotePort, p.LocalPort)).
+					Arg(fmt.Sprintf("open %s|%s|%d|%d", actualServiceName, strings.ToUpper(p.Type), p.RemotePort, p.LocalPort)).
 					Valid(true).
 					Icon(aw.IconWarning).
 					Var("action", "open")
-
-				// 添加mod键功能，显示更多信息
+				modSubtitle := "无描述信息"
 				item.NewModifier(aw.ModCmd).
-					Subtitle("显示更多详细信息")
+					Subtitle(modSubtitle)
 			}
 		}
 	}

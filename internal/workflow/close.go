@@ -57,22 +57,19 @@ func CloseCommand(wf *aw.Workflow) {
 		return
 	}
 
-	// 获取当前已开放的规则
-	openedRules, err := getRealOpenedPorts(cfg, secretID, secretKey)
-	if err != nil {
-		log.Error("获取安全组规则失败: %v", err)
-		wf.NewItem("获取安全组规则失败").Subtitle(err.Error()).Valid(false).Icon(aw.IconError)
-		wf.SendFeedback()
-		return
-	}
-
-	// 额外获取所有规则（包括ACCEPT和DROP）以检查状态
+	// openedRules、allRules 都以 proxy name 作为 key
 	allRules, err := getAllSecurityGroupRules(cfg, secretID, secretKey)
 	if err != nil {
 		log.Error("获取所有安全组规则失败: %v", err)
 		wf.NewItem("获取所有安全组规则失败").Subtitle(err.Error()).Valid(false).Icon(aw.IconError)
 		wf.SendFeedback()
 		return
+	}
+	openedRules := make(map[string]FetchedRuleInfo)
+	for proxyName, v := range allRules {
+		if v.Action == "ACCEPT" {
+			openedRules[proxyName] = v
+		}
 	}
 
 	log.Info("所有规则详情: %+v", allRules)
@@ -87,49 +84,38 @@ func CloseCommand(wf *aw.Workflow) {
 
 	// 显示可以关闭的规则列表
 	hasValidRules := false
-	for key, rule := range openedRules {
-		parts := strings.Split(key, ":")
-		if len(parts) != 2 {
-			log.Warn("规则键格式错误: %s", key)
-			continue
-		}
-
-		protocol := parts[0]
-		port := parts[1]
-
-		// 从描述中提取服务名称
-		serviceName := extractServiceName(rule.PolicyDescription)
-		localPort := extractLocalPort(rule.PolicyDescription)
+	for proxyName, rule := range openedRules {
+		protocol := rule.Protocol
+		port := rule.Port
+		localPort := rule.LocalPort
+		// serviceName := extractServiceName(rule.PolicyDescription)
+		// localPort := extractLocalPort(rule.PolicyDescription)
 
 		// 检查这个规则在云端是否已经是拒绝状态
-		ruleKey := fmt.Sprintf("%s:%s:%s", protocol, port, rule.CidrBlock)
-		if ruleInfo, exists := allRules[ruleKey]; exists {
-			actionLog := fmt.Sprintf("规则 %s [%s:%s] 在云端状态: %s, PolicyIndex: %d",
-				serviceName, protocol, port, ruleInfo.Action, ruleInfo.PolicyIndex)
-			log.Info(actionLog)
-
-			// 如果规则已经是DROP状态，跳过显示
-			if ruleInfo.Action == "DROP" {
-				log.Info("跳过已经是拒绝状态的规则: %s", ruleKey)
-				continue
-			}
-		} else {
-			log.Warn("在完整规则列表中未找到规则: %s", ruleKey)
-		}
-
+		icon := IconOpen // 默认已开放
 		hasValidRules = true
-		title := fmt.Sprintf("%s [%s]", serviceName, protocol)
+		title := fmt.Sprintf("%s [%s]", proxyName, protocol)
 		subtitle := fmt.Sprintf("远程端口:%s  本地端口:%s | IP: %s", port, localPort, rule.CidrBlock)
 
-		item := wf.NewItem("✅ "+title).
+		item := wf.NewItem(icon+" "+title).
 			Subtitle(subtitle).
-			Arg(fmt.Sprintf("close %s|%s|%s|%s|%d|%s", serviceName, protocol, port, rule.CidrBlock, rule.PolicyIndex, localPort)).
+			Arg(fmt.Sprintf("close %s|%s|%s|%s|%d|%s", proxyName, protocol, port, rule.CidrBlock, rule.PolicyIndex, localPort)).
 			Valid(true).
 			Var("action", "close")
 
 		// 添加mod键功能，显示更多信息
+		modSubtitle := rule.PolicyDescription
+		if rule.ModifyTime != "" {
+			if modSubtitle != "" {
+				modSubtitle += "\n"
+			}
+			modSubtitle += "最后修改时间: " + rule.ModifyTime
+		}
+		if modSubtitle == "" {
+			modSubtitle = "无描述信息"
+		}
 		item.NewModifier(aw.ModCmd).
-			Subtitle(fmt.Sprintf("详细信息: 描述=%s, 策略ID=%d", rule.PolicyDescription, rule.PolicyIndex))
+			Subtitle(modSubtitle)
 	}
 
 	if !hasValidRules {

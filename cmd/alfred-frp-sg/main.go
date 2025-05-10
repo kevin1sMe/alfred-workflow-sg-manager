@@ -37,20 +37,7 @@ func main() {
 	// 初始化日志
 	// 如果没有设置日志路径，使用默认路径
 	logPath := cfg.LogPath
-	if logPath == "" {
-		homeDir, err := os.UserHomeDir()
-		if err == nil {
-			logPath = homeDir + "/.alfred-frp-sg/alfred-frp-sg.log"
-		} else {
-			logPath = "/tmp/alfred-frp-sg.log"
-		}
-		// 更新配置
-		cfg.LogPath = logPath
-		config.Save(cfg)
-	}
-
-	// 使用INFO级别初始化日志
-	log.Init(logPath, log.INFO)
+	log.Init(logPath, log.DEBUG)
 	log.Info("Alfred Workflow FRP 安全组助手启动")
 
 	log.Info("os.Args: %#v, wf.Args(): %#v", os.Args, wf.Args())

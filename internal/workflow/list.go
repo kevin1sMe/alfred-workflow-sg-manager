@@ -10,111 +10,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	aw "github.com/deanishe/awgo"
-	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common"
-	tcErrors "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/errors"
-	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/profile"
-	vpc "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/vpc/v20170312"
 )
-
-type SimpleFrpcConfig struct {
-	Proxies []Proxy `toml:"proxies"`
-}
-
-type Proxy struct {
-	Name       string `toml:"name"`
-	Type       string `toml:"type"`
-	LocalIP    string `toml:"localIP"`
-	LocalPort  int    `toml:"localPort"`
-	RemotePort int    `toml:"remotePort"`
-	// 可以根据 frpc.toml 示例按需添加其他代理特有的字段
-	// 例如: transport.bandwidthLimit, healthCheck 等。
-	// metadatas 和 annotations 也可以作为 map[string]string 或更具体的结构体添加进来
-}
-
-// FetchedRuleInfo 存储从API获取并处理后的规则信息
-type FetchedRuleInfo struct {
-	PolicyDescription string
-	Protocol          string
-	Port              string
-	CidrBlock         string
-	PolicyIndex       int64
-}
-
-// getRealOpenedPorts 从腾讯云 API 获取安全组规则
-func getRealOpenedPorts(cfg *config.Config, secretID, secretKey string) (map[string]FetchedRuleInfo, error) {
-	if cfg.SecurityGroupId == "" {
-		log.Error("安全组 ID 未配置")
-		return nil, fmt.Errorf("安全组 ID 未配置")
-	}
-	if cfg.Region == "" {
-		log.Error("腾讯云区域未配置")
-		return nil, fmt.Errorf("腾讯云区域未配置")
-	}
-	if secretID == "" || secretKey == "" {
-		log.Error("腾讯云 SecretId 或 SecretKey 未配置")
-		return nil, fmt.Errorf("腾讯云 SecretId 或 SecretKey 未配置")
-	}
-
-	log.Info("正在创建腾讯云 VPC 客户端，区域: %s", cfg.Region)
-	cred := common.NewCredential(secretID, secretKey)
-	cpf := profile.NewClientProfile()
-	cpf.HttpProfile.Endpoint = "vpc.tencentcloudapi.com" // VPC API 的接入点
-	client, err := vpc.NewClient(cred, cfg.Region, cpf)
-	if err != nil {
-		log.Error("创建腾讯云 VPC 客户端失败: %v", err)
-		return nil, fmt.Errorf("创建腾讯云 VPC 客户端失败: %w", err)
-	}
-
-	log.Info("开始查询安全组规则, 安全组ID: %s", cfg.SecurityGroupId)
-	request := vpc.NewDescribeSecurityGroupPoliciesRequest()
-	request.SecurityGroupId = common.StringPtr(cfg.SecurityGroupId)
-
-	response, err := client.DescribeSecurityGroupPolicies(request)
-	if err != nil {
-		if sdkErr, ok := err.(*tcErrors.TencentCloudSDKError); ok {
-			log.Error("腾讯云 API 错误: Code=%s, Message=%s, RequestId=%s", sdkErr.GetCode(), sdkErr.GetMessage(), sdkErr.GetRequestId())
-			return nil, fmt.Errorf("腾讯云 API 错误: Code=%s, Message=%s, RequestId=%s", sdkErr.GetCode(), sdkErr.GetMessage(), sdkErr.GetRequestId())
-		}
-		log.Error("调用腾讯云 API 失败: %v", err)
-		return nil, fmt.Errorf("调用腾讯云 API 失败: %w", err)
-	}
-
-	openedPorts := make(map[string]FetchedRuleInfo)
-	if response.Response != nil && response.Response.SecurityGroupPolicySet != nil {
-		log.Info("成功获取安全组规则，开始解析入站规则")
-		for _, policy := range response.Response.SecurityGroupPolicySet.Ingress {
-			if policy.PolicyDescription != nil && strings.HasPrefix(*policy.PolicyDescription, "AlfredFRP_") {
-				if policy.Protocol != nil && policy.Port != nil {
-					key := fmt.Sprintf("%s:%s", strings.ToUpper(*policy.Protocol), *policy.Port) // 协议转大写，端口是字符串
-					var cidr, desc string
-					var pIndex int64 = -1 // 默认值，如果不存在
-					if policy.CidrBlock != nil {
-						cidr = *policy.CidrBlock
-					}
-					if policy.PolicyDescription != nil {
-						desc = *policy.PolicyDescription
-					}
-					if policy.PolicyIndex != nil {
-						pIndex = *policy.PolicyIndex
-					}
-
-					log.Debug("找到符合条件的规则: %s, 协议: %s, 端口: %s, CIDR: %s, 描述: %s", key, *policy.Protocol, *policy.Port, cidr, desc)
-					openedPorts[key] = FetchedRuleInfo{
-						PolicyDescription: desc,
-						Protocol:          strings.ToUpper(*policy.Protocol),
-						Port:              *policy.Port,
-						CidrBlock:         cidr,
-						PolicyIndex:       pIndex,
-					}
-				}
-			}
-		}
-		log.Info("解析完成，找到 %d 个符合条件的入站规则", len(openedPorts))
-	} else {
-		log.Warn("API响应为空或没有安全组策略集")
-	}
-	return openedPorts, nil
-}
 
 func List(wf *aw.Workflow) {
 	cfg, err := config.Load()
@@ -177,23 +73,6 @@ func List(wf *aw.Workflow) {
 		return
 	}
 
-	log.Info("frpcConf.proxies: %v", frpcConf.Proxies)
-	openedRules, err := getRealOpenedPorts(cfg, secretID, secretKey)
-	if err != nil {
-		log.Error("获取安全组规则失败: %v", err)
-		wf.NewItem("获取安全组规则失败").Subtitle(err.Error()).Valid(false).Icon(aw.IconError)
-		wf.SendFeedback()
-		return
-	}
-
-	log.Info("openedRules: %v", openedRules)
-	if len(frpcConf.Proxies) == 0 { // 检查 Proxies 切片是否为空
-		log.Error("frpc.toml 中未找到任何 [[proxies]] 定义")
-		wf.NewItem("frpc.toml 中未找到任何 [[proxies]] 定义").Subtitle("请确保 frpc.toml 中包含 [[proxies]] 配置块").Valid(false).Icon(aw.IconInfo)
-		wf.SendFeedback()
-		return
-	}
-
 	// 获取所有规则（包括ACCEPT和DROP）
 	allRules, err := getAllSecurityGroupRules(cfg, secretID, secretKey)
 	if err != nil {
@@ -201,6 +80,14 @@ func List(wf *aw.Workflow) {
 		wf.NewItem("获取所有安全组规则失败").Subtitle(err.Error()).Valid(false).Icon(aw.IconError)
 		wf.SendFeedback()
 		return
+	}
+
+	// 过滤出 Action == "ACCEPT" 的规则，生成 openedPorts
+	openedPorts := make(map[string]FetchedRuleInfo)
+	for proxyName, v := range allRules {
+		if v.Action == "ACCEPT" {
+			openedPorts[proxyName] = v
+		}
 	}
 
 	for _, p := range frpcConf.Proxies { // 遍历 Proxies 切片
@@ -218,77 +105,48 @@ func List(wf *aw.Workflow) {
 			continue
 		}
 
-		proto := "TCP" // 默认 TCP
-		if strings.ToUpper(p.Type) == "UDP" {
-			proto = "UDP"
-		}
-
-		// API 返回的 Port 是字符串，frpc.toml 的 RemotePort 是 int
-		key := fmt.Sprintf("%s:%d", proto, p.RemotePort)
-		status := "未开放"
-		isOpen := false
 		isDrop := false
-		ruleInfoText := ""
-
-		if rule, ok := openedRules[key]; ok {
-			status = "已开放"
-			isOpen = true
-			ruleInfoText = fmt.Sprintf(" | IP: %s (描述: %s)", rule.CidrBlock, rule.PolicyDescription)
-		}
-
-		// 检查是否存在对应的DROP规则
-		dropKey := fmt.Sprintf("%s:%d:%s", proto, p.RemotePort, "") // 不关心CIDR
-		for ruleKey, ruleInfo := range allRules {
-			if strings.HasPrefix(ruleKey, dropKey) && ruleInfo.Action == "DROP" {
+		isOpen := false
+		var dropRule, openRule FetchedRuleInfo
+		if ruleInfo, ok := allRules[actualServiceName]; ok {
+			if ruleInfo.Action == "DROP" {
 				isDrop = true
-				status = "已拒绝(DROP)"
-				ruleInfoText = fmt.Sprintf(" | IP: %s (描述: %s)", ruleInfo.CidrBlock, ruleInfo.PolicyDescription)
-				break
+				dropRule = ruleInfo
+			} else if ruleInfo.Action == "ACCEPT" {
+				isOpen = true
+				openRule = ruleInfo
 			}
 		}
-
-		title := fmt.Sprintf("%s [%s]", actualServiceName, proto)
-		subtitle := fmt.Sprintf("远程端口:%d  本地端口:%d | 状态: %s%s",
-			p.RemotePort, p.LocalPort, status, ruleInfoText)
-
+		title := fmt.Sprintf("%s [%s]", actualServiceName, strings.ToUpper(p.Type))
+		subtitle := fmt.Sprintf("远程端口:%d  本地端口:%d | 状态: ", p.RemotePort, p.LocalPort)
 		var displayTitle string
+		var policyDescription, lastMod string
 		if isDrop {
-			// 使用锁图标表示已拒绝
-			displayTitle = "🔒 " + title
+			displayTitle = IconDrop + " " + title
+			subtitle += "已拒绝(DROP)"
+			policyDescription = dropRule.PolicyDescription
+			lastMod = dropRule.ModifyTime
 		} else if isOpen {
-			// 使用绿色对勾图标表示已开放
-			displayTitle = "✅ " + title
+			displayTitle = IconOpen + " " + title
+			subtitle += "已开放"
+			policyDescription = openRule.PolicyDescription
+			lastMod = openRule.ModifyTime
 		} else {
-			// 使用加号图标表示未开放
-			displayTitle = "➕ " + title
+			displayTitle = IconUnknown + " " + title
+			subtitle += "未开放"
+		}
+		if lastMod != "" {
+			lastMod = "最后修改时间: " + lastMod
 		}
 
+		log.Debug("actualServiceName: %s, p.Type: %s, p.RemotePort: %d, policyDescription: %s, lastMod: %s", actualServiceName, p.Type, p.RemotePort, policyDescription, lastMod)
 		item := wf.NewItem(displayTitle).
 			Subtitle(subtitle).
-			Arg(fmt.Sprintf("%s %s %d", actualServiceName, proto, p.RemotePort)). // 为后续操作（如 close）准备参数
-			Valid(true)                                                           // 使其可选，以便后续操作
-
-		// 添加mod键功能，显示更多信息
+			Arg(fmt.Sprintf("%s %s %d", actualServiceName, strings.ToUpper(p.Type), p.RemotePort)).
+			Valid(false)
 		item.NewModifier(aw.ModCmd).
-			Subtitle(fmt.Sprintf("详细信息: 服务=%s, 协议=%s, 远程端口=%d, 本地端口=%d",
-				actualServiceName, proto, p.RemotePort, p.LocalPort))
+			Subtitle(fmt.Sprintf("%s %s", policyDescription, lastMod))
 	}
-
-	// 用户反馈：即使没有规则匹配，也应列出所有服务，而不是显示统一提示。
-	// 原来的逻辑是如果 wf.IsEmpty() 且 frpcConf.Proxies 有内容，则显示 "所有服务未开放" 的消息。
-	// 当前循环逻辑会为每个服务（无论是否开放）创建条目，所以如果 frpcConf.Proxies 有内容，
-	// wf.IsEmpty() 通常不应为 true，除非所有代理条目因其他条件被跳过。
-	// 为确保符合用户要求，移除此特定检查。
-	// if wf.IsEmpty() && len(frpcConf.Proxies) > 0 {
-	// 	wf.NewItem("所有有效的 frpc.toml 服务均未在安全组中开放 (或规则不匹配)").Valid(false).Icon(aw.IconInfo)
-	// 	wf.SendFeedback()
-	// 	return
-	// }
-
-	// 这部分检查 frpcConf.Proxies 为空的情况，已在前面 (line 164-169) 处理过，可以移除或保留作为双重检查。
-	// if wf.IsEmpty() && len(frpcConf.Proxies) == 0 {
-	// // 此情况已在前面处理
-	// }
 
 	wf.SendFeedback()
 }

@@ -13,15 +13,35 @@ import (
 	vpc "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/vpc/v20170312"
 )
 
-// getAllSecurityGroupRules 获取所有安全组规则（无论Accept还是Drop）
-func getAllSecurityGroupRules(cfg *config.Config, secretID, secretKey string) (map[string]struct {
+type SimpleFrpcConfig struct {
+	Proxies []Proxy `toml:"proxies"`
+}
+
+type Proxy struct {
+	Name       string `toml:"name"`
+	Type       string `toml:"type"`
+	LocalIP    string `toml:"localIP"`
+	LocalPort  int    `toml:"localPort"`
+	RemotePort int    `toml:"remotePort"`
+	// 可以根据 frpc.toml 示例按需添加其他代理特有的字段
+	// 例如: transport.bandwidthLimit, healthCheck 等。
+	// metadatas 和 annotations 也可以作为 map[string]string 或更具体的结构体添加进来
+}
+
+// FetchedRuleInfo 存储从API获取并处理后的规则信息
+type FetchedRuleInfo struct {
 	PolicyDescription string
 	Protocol          string
 	Port              string
 	CidrBlock         string
 	PolicyIndex       int64
+	ModifyTime        string
 	Action            string
-}, error) {
+	LocalPort         string
+}
+
+// getAllSecurityGroupRules 获取所有安全组规则（无论Accept还是Drop）
+func getAllSecurityGroupRules(cfg *config.Config, secretID, secretKey string) (map[string]FetchedRuleInfo, error) {
 	cred := common.NewCredential(secretID, secretKey)
 	cpf := profile.NewClientProfile()
 	cpf.HttpProfile.Endpoint = "vpc.tencentcloudapi.com"
@@ -45,21 +65,15 @@ func getAllSecurityGroupRules(cfg *config.Config, secretID, secretKey string) (m
 		return nil, fmt.Errorf("调用腾讯云 API 失败: %w", err)
 	}
 
-	allRules := make(map[string]struct {
-		PolicyDescription string
-		Protocol          string
-		Port              string
-		CidrBlock         string
-		PolicyIndex       int64
-		Action            string
-	})
+	allRules := make(map[string]FetchedRuleInfo)
 
 	if response.Response != nil && response.Response.SecurityGroupPolicySet != nil {
 		log.Info("成功获取安全组规则，开始解析所有规则")
 		for _, policy := range response.Response.SecurityGroupPolicySet.Ingress {
 			if policy.PolicyDescription != nil && strings.HasPrefix(*policy.PolicyDescription, "AlfredFRP_") {
 				if policy.Protocol != nil && policy.Port != nil && policy.CidrBlock != nil && policy.Action != nil {
-					key := fmt.Sprintf("%s:%s:%s", strings.ToUpper(*policy.Protocol), *policy.Port, *policy.CidrBlock)
+					proxyName := extractServiceName(*policy.PolicyDescription)
+					localPort := extractLocalPort(*policy.PolicyDescription)
 
 					var policyIndex int64 = -1
 					if policy.PolicyIndex != nil {
@@ -76,23 +90,23 @@ func getAllSecurityGroupRules(cfg *config.Config, secretID, secretKey string) (m
 						action = *policy.Action
 					}
 
-					log.Debug("找到规则: %s, 协议: %s, 端口: %s, CIDR: %s, 动作: %s, 描述: %s, 索引: %d",
-						key, *policy.Protocol, *policy.Port, *policy.CidrBlock, action, desc, policyIndex)
+					mtime := ""
+					if policy.ModifyTime != nil {
+						mtime = *policy.ModifyTime
+					}
 
-					allRules[key] = struct {
-						PolicyDescription string
-						Protocol          string
-						Port              string
-						CidrBlock         string
-						PolicyIndex       int64
-						Action            string
-					}{
+					log.Debug("找到规则: %s, 协议: %s, 端口: %s, CIDR: %s, 动作: %s, 描述: %s, 索引: %d, 修改时间: %s, 本地端口: %s",
+						proxyName, *policy.Protocol, *policy.Port, *policy.CidrBlock, action, desc, policyIndex, mtime, localPort)
+
+					allRules[proxyName] = FetchedRuleInfo{
 						PolicyDescription: desc,
 						Protocol:          strings.ToUpper(*policy.Protocol),
 						Port:              *policy.Port,
 						CidrBlock:         *policy.CidrBlock,
 						PolicyIndex:       policyIndex,
+						ModifyTime:        mtime,
 						Action:            action,
+						LocalPort:         localPort,
 					}
 				}
 			}

@@ -20,32 +20,13 @@ func ConfigCommand(wf *aw.Workflow, args []string) {
 		return
 	}
 
-	// 普通情况下处理子命令
+	// 只保留 setup_secretid 和 setup_secretkey 逻辑
 	sub := args[1]
 	switch sub {
-	case "setup_keys":
-		setupKeys(wf)
-	case "set_toml_path":
-		if len(args) < 3 {
-			wf.NewItem("请输入 frpc.toml 路径后回车").Valid(false)
-			wf.SendFeedback()
-			return
-		}
-		setTomlPath(wf, args[2])
-	case "set_sgid":
-		if len(args) < 3 {
-			wf.NewItem("请输入安全组ID后回车").Valid(false)
-			wf.SendFeedback()
-			return
-		}
-		setSgid(wf, args[2])
-	case "set_region": // 新增 set_region case
-		if len(args) < 3 {
-			wf.NewItem("请输入区域代码后回车 (例如 ap-guangzhou)").Subtitle("例如：ap-shanghai, ap-beijing, ap-guangzhou").Valid(false)
-			wf.SendFeedback()
-			return
-		}
-		setRegion(wf, args[2])
+	case "setup_secretid":
+		setupSecretId(wf, args)
+	case "setup_secretkey":
+		setupSecretKey(wf, args)
 	default:
 		showConfigHelp(wf)
 	}
@@ -54,109 +35,105 @@ func ConfigCommand(wf *aw.Workflow, args []string) {
 func showConfigHelp(wf *aw.Workflow) {
 	cfg, _ := config.Load()
 
+	// SecretId
+	id, _ := config.GetSecretId()
+	idShow := "未设置"
+	idTitle := "设置 SecretId"
+	if id != "" {
+		idShow = maskSecret(id)
+		idTitle = "修改 SecretId"
+	}
+	wf.NewItem(idTitle).
+		Subtitle(idShow).
+		Valid(true).
+		Arg("setup_secretid")
+
+	// SecretKey
+	key, _ := config.GetSecretKey()
+	keyShow := "未设置"
+	keyTitle := "设置 SecretKey"
+	if key != "" {
+		keyShow = maskSecret(key)
+		keyTitle = "修改 SecretKey"
+	}
+	wf.NewItem(keyTitle).
+		Subtitle(keyShow).
+		Valid(true).
+		Arg("setup_secretkey")
+
 	// frpc.toml 路径
 	tomlPath := "未设置"
 	if cfg.FrpcTomlPath != "" {
 		tomlPath = cfg.FrpcTomlPath
 	}
-	wf.NewItem("设置 frpc.toml 路径").
+	wf.NewItem("🔒 frpc.toml 路径").
 		Subtitle(tomlPath).
-		Valid(true).
-		Arg("set_toml_path," + tomlPath)
+		Valid(false)
 
 	// 安全组ID
 	sgid := "未设置"
 	if cfg.SecurityGroupId != "" {
 		sgid = cfg.SecurityGroupId
 	}
-	wf.NewItem("设置安全组 ID").
+	wf.NewItem("🔒 安全组 ID").
 		Subtitle(sgid).
-		Valid(true).
-		Arg("set_sgid," + sgid)
+		Valid(false)
 
 	// 区域
 	region := "未设置"
 	if cfg.Region != "" {
 		region = cfg.Region
 	}
-	wf.NewItem("设置腾讯云 API 区域").
+	wf.NewItem("🔒 腾讯云 API 区域").
 		Subtitle(region).
-		Valid(true).
-		Arg("set_region," + region)
+		Valid(false)
 
-	// 密钥（可选，按需展示）
-	id, _ := config.GetSecretId()
-	key, _ := config.GetSecretKey()
-	idShow := "未设置"
-	keyShow := "未设置"
-	if id != "" {
-		idShow = maskSecret(id)
+	// 日志路径
+	logPath := "未设置"
+	if cfg.LogPath != "" {
+		logPath = cfg.LogPath
 	}
-	if key != "" {
-		keyShow = maskSecret(key)
+	wf.NewItem("🔒 日志路径").
+		Subtitle(logPath).
+		Valid(false)
+
+	// 提示
+	if id == "" || key == "" {
+		wf.NewItem("请先设置 SecretId 和 SecretKey，否则无法正常使用。").Valid(false)
 	}
-	wf.NewItem("设置腾讯云 API 密钥").
-		Subtitle(fmt.Sprintf("id: %s, key: %s", idShow, keyShow)).
-		Valid(true).
-		Arg(fmt.Sprintf("setup_keys,%s,%s", id, key))
+	wf.NewItem("如需修改 region、frpc.toml 路径等参数，请在 Alfred 的 Workflow 配置面板中设置。").Valid(false)
 
 	wf.SendFeedback()
 }
 
-func setupKeys(wf *aw.Workflow) {
-	// Alfred 交互式输入建议用 awgo 的 Arg/Script Filter 机制，这里简化为环境变量读取
-	secretId := os.Getenv("FRP_SECRET_ID")
-	secretKey := os.Getenv("FRP_SECRET_KEY")
-	if secretId == "" || secretKey == "" {
-		wf.NewItem("请设置 FRP_SECRET_ID 和 FRP_SECRET_KEY 环境变量后重试").Valid(false)
+func setupSecretId(wf *aw.Workflow, args []string) {
+	if len(args) < 3 {
+		wf.NewItem("请输入 SecretId 后回车").Valid(false)
 		wf.SendFeedback()
 		return
 	}
-	err1 := config.SaveSecretId(secretId)
-	err2 := config.SaveSecretKey(secretKey)
-	if err1 != nil || err2 != nil {
-		wf.NewItem("保存密钥失败").Subtitle(fmt.Sprintf("%v %v", err1, err2)).Valid(false)
-	} else {
-		wf.NewItem("API 密钥保存成功").Valid(false)
-	}
-	wf.SendFeedback()
-}
-
-func setTomlPath(wf *aw.Workflow, path string) {
-	cfg, _ := config.Load()
-	cfg.FrpcTomlPath = path
-	if err := config.Save(cfg); err != nil {
-		wf.NewItem("保存 frpc.toml 路径失败").Subtitle(err.Error()).Valid(false)
-	} else {
-		wf.NewItem("frpc.toml 路径已保存").Subtitle(path).Valid(false)
-	}
-	wf.SendFeedback()
-}
-
-func setSgid(wf *aw.Workflow, sgid string) {
-	cfg, _ := config.Load()
-	cfg.SecurityGroupId = sgid
-	if err := config.Save(cfg); err != nil {
-		wf.NewItem("保存安全组ID失败").Subtitle(err.Error()).Valid(false)
-	} else {
-		wf.NewItem("安全组ID已保存").Subtitle(sgid).Valid(false)
-	}
-	wf.SendFeedback()
-}
-
-// setRegion 保存腾讯云 API 区域
-func setRegion(wf *aw.Workflow, region string) {
-	cfg, err := config.Load()
+	secretId := args[2]
+	err := config.SaveSecretId(secretId)
 	if err != nil {
-		wf.NewItem("加载配置失败").Subtitle(err.Error()).Valid(false)
+		wf.NewItem("保存 SecretId 失败").Subtitle(err.Error()).Valid(false)
+	} else {
+		wf.NewItem("SecretId 保存成功").Valid(false)
+	}
+	wf.SendFeedback()
+}
+
+func setupSecretKey(wf *aw.Workflow, args []string) {
+	if len(args) < 3 {
+		wf.NewItem("请输入 SecretKey 后回车").Valid(false)
 		wf.SendFeedback()
 		return
 	}
-	cfg.Region = region
-	if err := config.Save(cfg); err != nil {
-		wf.NewItem("保存区域配置失败").Subtitle(err.Error()).Valid(false)
+	secretKey := args[2]
+	err := config.SaveSecretKey(secretKey)
+	if err != nil {
+		wf.NewItem("保存 SecretKey 失败").Subtitle(err.Error()).Valid(false)
 	} else {
-		wf.NewItem("腾讯云 API 区域已保存").Subtitle(region).Valid(false)
+		wf.NewItem("SecretKey 保存成功").Valid(false)
 	}
 	wf.SendFeedback()
 }

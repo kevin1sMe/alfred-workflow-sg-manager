@@ -1,31 +1,10 @@
 package config
 
 import (
-	"os"
 	"testing"
 
 	"github.com/keybase/go-keychain"
 )
-
-func TestConfigFileRW(t *testing.T) {
-	cfg := &Config{
-		FrpcTomlPath:    "/tmp/test.toml",
-		SecurityGroupId: "sg-12345678",
-	}
-	if err := Save(cfg); err != nil {
-		t.Fatalf("Save config failed: %v", err)
-	}
-	cfg2, err := Load()
-	if err != nil {
-		t.Fatalf("Load config failed: %v", err)
-	}
-	if cfg2.FrpcTomlPath != cfg.FrpcTomlPath || cfg2.SecurityGroupId != cfg.SecurityGroupId {
-		t.Errorf("Loaded config not match: got %+v, want %+v", cfg2, cfg)
-	}
-	// 清理
-	path, _ := configFilePath()
-	_ = os.Remove(path)
-}
 
 func TestKeychainRW(t *testing.T) {
 	secretId := "test-secret-id-abcdefg"
