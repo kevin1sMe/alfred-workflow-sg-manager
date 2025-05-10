@@ -106,9 +106,6 @@ func CloseCommand(wf *aw.Workflow) {
 		// 添加mod键功能，显示更多信息
 		modSubtitle := rule.PolicyDescription
 		if rule.ModifyTime != "" {
-			if modSubtitle != "" {
-				modSubtitle += "\n"
-			}
 			modSubtitle += "最后修改时间: " + rule.ModifyTime
 		}
 		if modSubtitle == "" {

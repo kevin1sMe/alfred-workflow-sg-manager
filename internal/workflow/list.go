@@ -90,6 +90,14 @@ func List(wf *aw.Workflow) {
 		}
 	}
 
+	// 新增：展示本机外网IP
+	ip, err := getCurrentPublicIP()
+	if err != nil {
+		wf.NewItem("本机外网IP获取失败").Subtitle(err.Error()).Valid(false).Icon(aw.IconWarning)
+	} else {
+		wf.NewItem("本机外网IP: " + ip).Subtitle("用于安全组规则开放").Valid(false).Icon(aw.IconInfo)
+	}
+
 	for _, p := range frpcConf.Proxies { // 遍历 Proxies 切片
 		actualServiceName := p.Name // 直接使用 Proxy 结构中的 Name
 		if actualServiceName == "" {
@@ -123,12 +131,14 @@ func List(wf *aw.Workflow) {
 		var policyDescription, lastMod string
 		if isDrop {
 			displayTitle = IconDrop + " " + title
-			subtitle += "已拒绝(DROP)"
+			subtitle += "IP: " + dropRule.CidrBlock
+			subtitle += " 已拒绝(DROP)"
 			policyDescription = dropRule.PolicyDescription
 			lastMod = dropRule.ModifyTime
 		} else if isOpen {
 			displayTitle = IconOpen + " " + title
-			subtitle += "已开放"
+			subtitle += "IP: " + openRule.CidrBlock
+			subtitle += " 已开放"
 			policyDescription = openRule.PolicyDescription
 			lastMod = openRule.ModifyTime
 		} else {

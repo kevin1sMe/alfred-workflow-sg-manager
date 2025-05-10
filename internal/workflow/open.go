@@ -142,9 +142,6 @@ func OpenCommand(wf *aw.Workflow) {
 				if ruleInfo, ok := allRules[actualServiceName]; ok && ruleInfo.Action == "DROP" {
 					modSubtitle = ruleInfo.PolicyDescription
 					if ruleInfo.ModifyTime != "" {
-						if modSubtitle != "" {
-							modSubtitle += "\n"
-						}
 						modSubtitle += "最后修改时间: " + ruleInfo.ModifyTime
 					}
 				}
@@ -166,9 +163,6 @@ func OpenCommand(wf *aw.Workflow) {
 				if rule, ok := openedRules[actualServiceName]; ok {
 					modSubtitle = rule.PolicyDescription
 					if rule.ModifyTime != "" {
-						if modSubtitle != "" {
-							modSubtitle += "\n"
-						}
 						modSubtitle += "最后修改时间: " + rule.ModifyTime
 					}
 				}
